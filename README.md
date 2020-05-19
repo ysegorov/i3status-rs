@@ -9,6 +9,9 @@ Implements [i3bar protocol][i3bar-protocol].
 
 **Written in Rust as educational project for personal use only.**
 
+Check [greshake/i3status-rust][i3status-rust] for full featured `i3status`
+implementation written in Rust.
+
 
 ## Runtime Dependencies
 
@@ -62,3 +65,4 @@ and reload `i3wm` configuration or simply restart `i3wm`.
 [i3bar-protocol]: https://i3wm.org/docs/i3bar-protocol.html
 [rust-install]: https://www.rust-lang.org/tools/install
 [unlicense]: http://unlicense.org
+[i3status-rust]: https://github.com/greshake/i3status-rust

@@ -3,6 +3,8 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+use sysinfo::System;
+
 use super::{Block, Status};
 
 pub struct WirelessBlock;
@@ -83,7 +85,7 @@ impl WirelessBlock {
 }
 
 impl Block for WirelessBlock {
-    fn make(&self) -> (&str, String, Status) {
+    fn make(&self, _: &mut System) -> (&str, String, Status) {
         let (dev, essid) = self.dev_essid();
         let symb = '';
 

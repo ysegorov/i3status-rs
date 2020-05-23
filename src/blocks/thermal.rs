@@ -1,24 +1,11 @@
 
-use std::fs;
+use sysinfo::{System, SystemExt, ComponentExt};
 
 use super::{Block, Status};
-
-const SYSFS_THERMAL_ZONE0_TEMP: &str = "/sys/class/thermal/thermal_zone0/temp";
 
 pub struct ThermalBlock;
 
 impl ThermalBlock {
-    fn temp(&self) -> i32 {
-        let text = fs::read_to_string(SYSFS_THERMAL_ZONE0_TEMP)
-            .map(|x| x.trim().to_owned())
-            .ok();
-        if let Some(value) = text {
-            let value = value.parse::<i32>();
-            if value.is_ok() { value.unwrap() / 1000 } else { 0 }
-        } else {
-            0
-        }
-    }
     fn symb(&self, temp: i32) -> char {
         match temp {
             x if x <= 65 => '',
@@ -36,8 +23,16 @@ impl ThermalBlock {
 }
 
 impl Block for ThermalBlock {
-    fn make(&self) -> (&str, String, Status) {
-        let temp = self.temp();
+    fn make(&self, s: &mut System) -> (&str, String, Status) {
+        s.refresh_components();
+        let temp: Option<i32> = s.get_components().iter()
+            .filter(|x| x.get_label().starts_with("Core"))
+            .map(|x| x.get_temperature() as i32)
+            .max();
+        let temp = match temp {
+            Some(x) => x,
+            None => 0,
+        };
         let symb = self.symb(temp);
         let status = self.status(temp);
 

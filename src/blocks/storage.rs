@@ -1,40 +1,12 @@
 
-use std::process::Command;
+use sysinfo::{System, SystemExt, DiskExt};
 
 use super::{Block, Status};
 
 pub struct StorageBlock;
 
 impl StorageBlock {
-    fn available_capacity(&self) -> (f32, i8) {
-        // NB. outputs Available and Capacity fields from df output
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg("df -P -l / |grep -v Avail |awk '{ gsub(\"%\", \"\"); print $4, $5; }'")
-            .output()
-            .map(|x| {
-                String::from_utf8(x.stdout).unwrap_or(String::from("0 0"))
-            })
-            .ok();
-        match output {
-            Some(value) => {
-                let mut parts = value.split_whitespace();
-                let available = parts.next();
-                let capacity = parts.next();
-
-                match (available, capacity) {
-                    (Some(avail), Some(cap)) => {
-                        let avail: f32 = avail.parse().unwrap_or(0.0) /1024.0 / 1024.0;
-                        let cap: i8 = cap.parse().unwrap_or(-1);
-                        (avail, cap)
-                    },
-                    _ => (0.0, -1)
-                }
-            },
-            None => (0.0, -1)
-        }
-    }
-    fn status(&self, cap: i8) -> Status {
+    fn status(&self, cap: u64) -> Status {
         match cap {
             0..=95 => Status::Normal,
             96..=98 => Status::Warning,
@@ -45,8 +17,20 @@ impl StorageBlock {
 }
 
 impl Block for StorageBlock {
-    fn make(&self) -> (&str, String, Status) {
-        let (avail, cap) = self.available_capacity();
+    fn make(&self, s: &mut System) -> (&str, String, Status) {
+        s.refresh_disks();
+        let avail_total = s.get_disks().iter()
+            .filter(|x| x.get_mount_point().to_str() == Some("/"))
+            .map(|x| (x.get_available_space(), x.get_total_space()))
+            .nth(0);
+        let (avail, cap) = match avail_total {
+            Some((avail, total)) => {
+                let avail_gb = avail as f64 /1024.0 /1024.0 /1024.0;
+                let cap = avail / total * 100;
+                (avail_gb, cap)
+            },
+            _ => (0.0, 1),
+        };
         let status = self.status(cap);
         let symb = '';
         let text = format!("{} {:.1}Gb", symb, avail);

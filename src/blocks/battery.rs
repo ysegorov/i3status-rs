@@ -1,5 +1,6 @@
 
 use std::cell::RefCell;
+use sysinfo::System;
 
 use battery::State;
 
@@ -48,7 +49,7 @@ impl BatteryBlock {
 }
 
 impl Block for BatteryBlock {
-    fn make(&self) -> (&str, String, Status) {
+    fn make(&self, _: &mut System) -> (&str, String, Status) {
         let name = "battery";
 
         match (self.manager.as_ref(), self.battery.as_ref()) {

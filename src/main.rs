@@ -6,13 +6,16 @@ mod blocks;
 
 
 fn main() {
-    let delay = time::Duration::from_secs(3);
-    let blocks = crate::blocks::get_blocks();
+    let delay = time::Duration::from_secs(2);
+    let blocks = blocks::Blocks::new();
+
     println!("{{\"version\": 1}}");
     println!("[");
     println!("[],");
+
     loop {
-        let data: Vec<HashMap<&str, String>> = blocks.iter().map(|x| x.serialize()).collect();
+        let data: Vec<HashMap<&str, String>> = blocks.serialize();
+
         println!("{},", serde_json::to_string(&data).unwrap());
         io::stdout().flush().ok();
         thread::sleep(delay);

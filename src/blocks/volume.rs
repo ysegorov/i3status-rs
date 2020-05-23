@@ -1,5 +1,6 @@
 
 use std::process::Command;
+use sysinfo::System;
 
 use super::{Block, Status};
 
@@ -54,7 +55,7 @@ impl VolumeBlock {
 }
 
 impl Block for VolumeBlock {
-    fn make(&self) -> (&str, String, Status) {
+    fn make(&self, _: &mut System) -> (&str, String, Status) {
         let (level, is_online) = self.level_state();
         let status = self.status(level, is_online);
         let symb = self.symb(level);

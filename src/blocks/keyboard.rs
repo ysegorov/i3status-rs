@@ -1,6 +1,8 @@
 
 use std::process::Command;
 
+use sysinfo::System;
+
 use super::{Block, Status};
 
 pub struct KeyboardBlock;
@@ -22,7 +24,7 @@ impl KeyboardBlock {
 }
 
 impl Block for KeyboardBlock {
-    fn make(&self) -> (&str, String, Status) {
+    fn make(&self, _: &mut System) -> (&str, String, Status) {
         let layout = self.layout();
         let status = if layout == "us" { Status::Normal } else { Status::Warning };
         let symb = '';

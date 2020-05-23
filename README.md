@@ -19,10 +19,10 @@ implementation written in Rust.
 - mounted `sysfs` filesystem
 - `iwconfig`, `iwgetid` (`wireless-tools` package)
 - `ip` (`iproute2` package)
-- `vmstat` (`procps-ng` package)
 - `xkblayout-state` (`xkblayout-state-git` package)
 - `amixer` (`alsa-utils` package)
-- `df` (`coreutils` package)
+- `sed` (`sed` package)
+- `awk` (`awk` package)
 
 
 ## Usage

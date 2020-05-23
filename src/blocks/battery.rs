@@ -1,36 +1,29 @@
 
-use std::fs;
+use std::cell::RefCell;
+
+use battery::State;
 
 use super::{Block, Status};
 
-const SYSFS_BAT0_CAPACITY: &str = "/sys/class/power_supply/BAT0/capacity";
-const SYSFS_AC0_ONLINE: &str = "/sys/class/power_supply/AC0/online";
-
-pub struct BatteryBlock;
+pub struct BatteryBlock {
+    manager: Option<battery::Manager>,
+    battery: Option<RefCell<battery::Battery>>,
+}
 
 impl BatteryBlock {
-    fn capacity(&self) -> i8 {
-        let text = fs::read_to_string(SYSFS_BAT0_CAPACITY)
-            .map(|x| x.trim().to_owned())
-            .ok();
-        if let Some(value) = text {
-            let value = value.parse();
-            if value.is_ok() { value.unwrap() } else { 0 }
+    pub fn new() -> Self {
+        let manager = battery::Manager::new().ok();
+        let battery = if let Some(mgr) = manager.as_ref() {
+            mgr.batteries().map(|mut x| x.next()).unwrap_or(None)
         } else {
-            0
+            None
+        };
+        BatteryBlock {
+            manager: manager,
+            battery: battery.and_then(|x| x.map(|y| RefCell::new(y)).ok()),
         }
     }
-    fn is_online(&self) -> bool {
-        let text = fs::read_to_string(SYSFS_AC0_ONLINE)
-            .map(|x| x.trim().to_owned())
-            .ok();
-        if let Some(value) = text {
-            value == "1"
-        } else {
-            false
-        }
-    }
-    fn symb(&self, capacity: i8) -> char {
+    fn symb(&self, capacity: i32) -> char {
         match capacity {
             1..=10 => '',
             11..=20 => '',
@@ -45,7 +38,7 @@ impl BatteryBlock {
             _ => '',
         }
     }
-    fn status(&self, capacity: i8, is_online: bool) -> Status {
+    fn status(&self, capacity: i32, is_online: bool) -> Status {
         match (capacity, is_online) {
             (x, _) if x < 10 => Status::Alarm,
             (_, y) if !y => Status::Warning,
@@ -56,13 +49,28 @@ impl BatteryBlock {
 
 impl Block for BatteryBlock {
     fn make(&self) -> (&str, String, Status) {
-        let capacity = self.capacity();
-        let is_online = self.is_online();
-        let status = self.status(capacity, is_online);
-        let symb = self.symb(capacity);
+        let name = "battery";
 
-        let text = format!("{} {}%", symb, capacity);
+        match (self.manager.as_ref(), self.battery.as_ref()) {
+            (Some(manager), Some(battery)) => {
+                let mut battery = battery.borrow_mut();
+                if manager.refresh(&mut battery).is_ok() {
+                    let capacity = (battery.state_of_charge().value * 100.0) as i32;
+                    let state = battery.state();
+                    let is_online = state != State::Discharging && state != State::Empty;
+                    let status = self.status(capacity, is_online);
+                    let symb = self.symb(capacity);
 
-        ("battery", text, status)
+                    let text = format!("{} {}%", symb, capacity);
+
+                    (name, text, status)
+                } else {
+                    (name, String::from("!"), Status::Alarm)
+                }
+            },
+            _ => {
+                (name, String::from(""), Status::Alarm)
+            }
+        }
     }
 }

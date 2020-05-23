@@ -46,7 +46,7 @@ pub fn get_blocks() -> [Box<dyn Block>; 8] {
         Box::new(wireless::WirelessBlock),
         Box::new(processor::ProcessorBlock),
         Box::new(thermal::ThermalBlock),
-        Box::new(battery::BatteryBlock),
+        Box::new(battery::BatteryBlock::new()),
         Box::new(volume::VolumeBlock),
         Box::new(tztime::TzTimeBlock),
     ]
